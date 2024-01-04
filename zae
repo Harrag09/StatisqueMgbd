@@ -1,0 +1,68 @@
+// Résumé : <indiquez ici ce que fait la procédure>
+// Syntaxe :
+// Actualiser ()
+//
+// Paramètres :
+//	Aucun
+// Valeur de retour :
+// 	Aucune
+//
+// Exemple :
+// <Indiquez ici un exemple d'utilisation>
+//
+PROCÉDURE Actualiser()
+HExécuteRequête(REQ_TotalCA,hRequêteDéfaut)
+LIB_CAHT	= REQ_TotalCA.la_somme_TotalTTC/1.1
+LIB_CATTC	= REQ_TotalCA.la_somme_TotalTTC
+LIB_TVA		= Val(LIB_CATTC)-Val(LIB_CAHT)
+HExécuteRequête(REQ_CA_Mode_Payements,hRequêteDéfaut,1)
+LIB_Espéces=REQ_CA_Mode_Payements.la_somme_TotalMontant
+HExécuteRequête(REQ_CA_Mode_Payements,hRequêteDéfaut,3)
+LIB_C_B=REQ_CA_Mode_Payements.la_somme_TotalMontant
+HExécuteRequête(REQ_CA_Mode_Payements,hRequêteDéfaut,2)
+LIB_Chéques=REQ_CA_Mode_Payements.la_somme_TotalMontant
+HExécuteRequête(REQ_CA_Mode_Payements,hRequêteDéfaut,4)
+LIB_Ticket_Resto=REQ_CA_Mode_Payements.la_somme_TotalMontant
+HExécuteRequête(REQ_Mode_Consommation,hRequêteDéfaut,1)
+LIB_sur_places=REQ_Mode_Consommation.la_somme_TotalTTC
+HExécuteRequête(REQ_Mode_Consommation,hRequêteDéfaut,2)
+LIB_A_Emporter=REQ_Mode_Consommation.la_somme_TotalTTC
+HExécuteRequête(REQ_Mode_Consommation,hRequêteDéfaut,3)
+LIB_Livraison=REQ_Mode_Consommation.la_somme_TotalTTC
+
+HExécuteRequête(REQ_TVAparTaux,hRequêteDéfaut)
+POUR TOUT REQ_TVAparTaux 
+	ZoneRépétéeAjouteLigne(ZR_TVA,REQ_TVAparTaux.tauxTvaLigneTicket)
+FIN
+HExécuteRequête(REQ_MontantTVAparTaux,hRequêteDéfaut)
+POUR TOUT REQ_MontantTVAparTaux  
+	ZoneRépétéeAjouteLigne(ZR_TVA,REQ_MontantTVAparTaux.Formule1)
+FIN
+
+MaREq	est un restRequête
+Maresp	est un restRéponse
+MaREq.URL		= "http://localhost:8000/Update"
+MaREq.Méthode	= httpPost
+	
+jz est un JSON 
+jz.Total_HT			= LIB_CAHT
+jz.TVA				= LIB_TVA
+jz.Total_TTC		= LIB_CATTC
+
+jz.Especes			= LIB_Espéces
+jz.Carte_Bancaire	= LIB_C_B
+jz.Cheques			= LIB_Chéques
+jz.TicketResto		= LIB_Ticket_Resto
+
+jz.SurPlace			= LIB_sur_places
+jz.A_Emporter		= LIB_A_Emporter
+jz.Livraison		= LIB_Livraison
+	jz.IdCRM			= sValeur
+
+
+MaREq.Contenu		= jz
+MaREq.ContentType	= typeMimeJSON
+Maresp				= RESTEnvoie(MaREq)
+SI ErreurDétectée ALORS
+	Erreur(ErreurInfo(errComplet))
+FIN
